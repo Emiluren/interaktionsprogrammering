@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                                             xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+                                             android:layout_height="match_parent">
+
+    <RadioGroup
+            android:layout_width="266dp"
+            android:layout_height="75dp" tools:layout_editor_absoluteY="53dp"
+            tools:layout_editor_absoluteX="59dp">
+        <RadioButton
+                android:text="Bra"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:id="@+id/radioButton" android:layout_weight="1"/>
+        <RadioButton
+                android:text="Mycket bra"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:id="@+id/radioButton2" android:layout_weight="1"
+                android:checked="false"/>
+        <RadioButton
+                android:text="Jättebra"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:id="@+id/radioButton3" android:layout_weight="1"
+                android:checked="true"/>
+    </RadioGroup>
+    <TextView
+            android:text="Hur trivs du på LiU?"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" tools:layout_editor_absoluteY="16dp"
+            tools:layout_editor_absoluteX="132dp" android:id="@+id/textView5"/>
+    <TextView
+            android:text="Läser du på LiTH?"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" tools:layout_editor_absoluteY="128dp"
+            tools:layout_editor_absoluteX="136dp" android:id="@+id/textView6"/>
+    <RadioGroup
+            android:layout_width="261dp"
+            android:layout_height="46dp" tools:layout_editor_absoluteY="147dp"
+            tools:layout_editor_absoluteX="59dp">
+        <RadioButton
+                android:text="Ja"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:id="@+id/radioButton4" android:layout_weight="1"
+                android:checked="true"/>
+        <RadioButton
+                android:text="Nej"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:id="@+id/radioButton5" android:layout_weight="1"/>
+    </RadioGroup>
+    <ImageView
+            android:src="@drawable/logo"
+            android:layout_width="186dp"
+            android:layout_height="179dp" tools:layout_editor_absoluteY="193dp"
+            tools:layout_editor_absoluteX="99dp" android:id="@+id/imageView" android:cropToPadding="true"/>
+    <TextView
+            android:text="Är detta LiUs logotyp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" tools:layout_editor_absoluteY="372dp"
+            tools:layout_editor_absoluteX="127dp" android:id="@+id/textView7"/>
+    <RadioGroup
+            android:layout_width="194dp"
+            android:layout_height="44dp" tools:layout_editor_absoluteY="391dp"
+            tools:layout_editor_absoluteX="59dp">
+        <RadioButton
+                android:text="Ja"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:id="@+id/radioButton6" android:layout_weight="1"
+                android:checked="true"/>
+        <RadioButton
+                android:text="Nej"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:id="@+id/radioButton7" android:layout_weight="1"/>
+    </RadioGroup>
+    <Button
+            android:text="Skicka in"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" tools:layout_editor_absoluteY="435dp"
+            android:id="@+id/button2" app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+</android.support.constraint.ConstraintLayout>
