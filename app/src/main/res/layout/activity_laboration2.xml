@@ -13,7 +13,7 @@
                         app:layout_constraintEnd_toEndOf="parent" app:layout_constraintBottom_toBottomOf="parent"
                         android:id="@+id/browser"
                         android:choiceMode="singleChoice"
-                        android:listSelector="@drawable/selector_list_item"></ExpandableListView>
+    ></ExpandableListView>
     <EditText
             android:layout_width="0dp"
             android:layout_height="wrap_content"

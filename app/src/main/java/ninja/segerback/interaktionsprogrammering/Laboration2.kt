@@ -5,10 +5,7 @@ import android.app.Activity
 import android.graphics.Color
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
-import android.view.View
 import android.widget.*
-import android.widget.ExpandableListView.PACKED_POSITION_VALUE_NULL
 import java.util.regex.Pattern
 
 const val NAME = "NAME"
@@ -22,10 +19,11 @@ class Laboration2 : Activity() {
     private lateinit var adapter: SimpleExpandableListAdapter
     private lateinit var patheditor: EditText
 
+    private var inClickManager = false
+
     private val pattern = Pattern.compile("/(?<group>[^/]*)(/(?<child>[^/]*))?")
 
-    private var previosGroup = -1
-    private var previosChild = -1
+    private var previousPackedPosition: Long? = null
 
     // Data is expected to be constant, this list is used both for generation
     // of the list view and to search for matches from input
@@ -55,7 +53,9 @@ class Laboration2 : Activity() {
             }
 
             override fun afterTextChanged(s: Editable?) {
-                afterTextChanged()
+                if (!inClickManager) {
+                    afterTextChanged()
+                }
             }
         })
     }
@@ -79,20 +79,32 @@ class Laboration2 : Activity() {
     private fun onChildClick(groupPosition: Int, childPosition: Int): Boolean {
         val group = (adapter.getGroup(groupPosition) as Map<String, String>)[NAME]
         val child = (adapter.getChild(groupPosition, childPosition) as Map<String, String>)[NAME]
-        patheditor.setText("/$group/$child")
 
-        previosChild = groupPosition
-        previosGroup = childPosition
+        //unselectPrevious()
+        selectChild(groupPosition, childPosition)
+
+        inClickManager = true
+        patheditor.setText("/$group/$child")
+        inClickManager = false
+
+        //previousPackedPosition =
+        //    ExpandableListView.getPackedPositionForChild(groupPosition, childPosition)
 
         return true
     }
 
     private fun onGroupClick(groupPosition: Int): Boolean {
         val group = (adapter.getGroup(groupPosition) as Map<String, String>)[NAME]
-        patheditor.setText("/$group")
 
-        previosChild = -1
-        previosGroup = groupPosition
+        //unselectPrevious()
+        selectGroup(groupPosition)
+
+        inClickManager = true
+        patheditor.setText("/$group")
+        inClickManager = false
+
+        //previousPackedPosition =
+        //    ExpandableListView.getPackedPositionForGroup(groupPosition)
 
         return false
     }
@@ -157,32 +169,53 @@ class Laboration2 : Activity() {
         when (matchType) {
             MATCH_TYPE.Full -> {
                 if (childIndex == -1) {
-                    browser.setSelectedGroup(groupIndex)
-                    previosChild = -1
-                    previosGroup = groupIndex
+                    selectGroup(groupIndex)
                 } else {
-                    browser.setSelectedChild(groupIndex, childIndex, true)
-                    previosChild = childIndex
-                    previosGroup = groupIndex
+                    selectChild(groupIndex, childIndex)
                 }
             }
             MATCH_TYPE.Partial -> {
-                if (previosGroup != -1) {
-                    if (previosChild != -1) {
-                        browser.setSelectedChild(previosGroup, previosChild, true)
-                    } else {
-                        browser.setSelectedGroup(previosGroup)
-                    }
+                val pos = previousPackedPosition
+                if (pos != null) {
+                    val index = browser.getFlatListPosition(pos)
+                    browser.getChildAt(index).setBackgroundColor(LIGHT_BLUE)
                 }
             }
             MATCH_TYPE.Invalid -> {
                 patheditor.setBackgroundColor(Color.RED)
-                //browser.clearChoices()
-//                val selectedPos = browser.selectedPosition
-//                if (selectedPos != ExpandableListView.PACKED_POSITION_VALUE_NULL) {
-//                    browser.setItemChecked(browser.getFlatListPosition(selectedPos), false)
-//                }
+                unselectPrevious()
             }
+        }
+    }
+
+    val LIGHT_BLUE = Color.rgb(100, 200, 255)
+
+    private fun selectGroup(groupIndex: Int) {
+        unselectPrevious()
+        if (!browser.isGroupExpanded(groupIndex)) {
+            browser.expandGroup(groupIndex)
+        }
+        val pos = ExpandableListView.getPackedPositionForGroup(groupIndex)
+        val index = browser.getFlatListPosition(pos)
+        previousPackedPosition = pos
+        browser.getChildAt(index).setBackgroundColor(LIGHT_BLUE)
+    }
+
+    private fun selectChild(groupIndex: Int, childIndex: Int) {
+        unselectPrevious()
+        browser.expandGroup(groupIndex)
+
+        val pos = ExpandableListView.getPackedPositionForChild(groupIndex, childIndex)
+        val index = browser.getFlatListPosition(pos)
+        previousPackedPosition = pos
+        browser.getChildAt(index).setBackgroundColor(LIGHT_BLUE)
+    }
+
+    private fun unselectPrevious() {
+        val pos = previousPackedPosition
+        if (pos != null) {
+            val index = browser.getFlatListPosition(pos)
+            browser.getChildAt(index).setBackgroundColor(Color.WHITE)
         }
     }
 }
