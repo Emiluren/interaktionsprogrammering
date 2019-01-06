@@ -2,13 +2,14 @@ package ninja.segerback.interaktionsprogrammering
 
 import android.os.Bundle
 import android.app.Activity
+import android.content.Context
 import android.graphics.Color
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import java.util.regex.Pattern
-
-const val NAME = "NAME"
 
 enum class MATCH_TYPE {
     Partial, Invalid, Full
@@ -16,23 +17,10 @@ enum class MATCH_TYPE {
 
 class Laboration2 : Activity() {
     private lateinit var browser: ExpandableListView
-    private lateinit var adapter: SimpleExpandableListAdapter
+    private lateinit var adapter: ExpandableListAdapter
     private lateinit var patheditor: EditText
 
     private var inClickManager = false
-
-    private val pattern = Pattern.compile("/(?<group>[^/]*)(/(?<child>[^/]*))?")
-
-    private var previousPackedPosition: Long? = null
-
-    // Data is expected to be constant, this list is used both for generation
-    // of the list view and to search for matches from input
-    private val data = listOf(
-        Pair("light", listOf("pink", "grey")),
-        Pair("medium", listOf("green", "yellow", "red", "blue")),
-        Pair("light", listOf("beige")),
-        Pair("dark", listOf("black", "purple"))
-    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +28,7 @@ class Laboration2 : Activity() {
 
         patheditor = findViewById(R.id.pathedit)
         browser = findViewById(R.id.browser)
-        adapter = makeAdapter()
+        adapter = ExpandableListAdapter(this)
 
         browser.setAdapter(adapter)
         browser.setOnChildClickListener { _, _ , group, child, _ -> onChildClick(group, child) }
@@ -60,162 +48,235 @@ class Laboration2 : Activity() {
         })
     }
 
-    private fun makeAdapter(): SimpleExpandableListAdapter {
-        // Based on example found here https://stackoverflow.com/questions/18350824/
-
-        val groupData = data.map { (groupName, _) -> mapOf(NAME to groupName) }
-        val childData = data.map { (_, children) ->
-            children.map { child -> mapOf(NAME to  child) }
-        }
-
-        return SimpleExpandableListAdapter(this,
-            groupData, android.R.layout.simple_expandable_list_item_1,
-            arrayOf(NAME), IntArray(1) { android.R.id.text1 },
-            childData, android.R.layout.simple_expandable_list_item_2,
-            arrayOf(NAME), IntArray(1) { android.R.id.text1 }
-        )
-    }
-
     private fun onChildClick(groupPosition: Int, childPosition: Int): Boolean {
-        val group = (adapter.getGroup(groupPosition) as Map<String, String>)[NAME]
-        val child = (adapter.getChild(groupPosition, childPosition) as Map<String, String>)[NAME]
-
-        //unselectPrevious()
-        selectChild(groupPosition, childPosition)
+        val (group, children) = (adapter.getGroup(groupPosition) as Pair<String, List<String>>)
+        val child = children[childPosition]
 
         inClickManager = true
         patheditor.setText("/$group/$child")
         inClickManager = false
 
-        //previousPackedPosition =
-        //    ExpandableListView.getPackedPositionForChild(groupPosition, childPosition)
+        adapter.selectChildFromPosition(groupPosition, childPosition)
 
         return true
     }
 
     private fun onGroupClick(groupPosition: Int): Boolean {
-        val group = (adapter.getGroup(groupPosition) as Map<String, String>)[NAME]
-
-        //unselectPrevious()
-        selectGroup(groupPosition)
+        val (group, _) = (adapter.getGroup(groupPosition) as Pair<String, List<String>>)
 
         inClickManager = true
         patheditor.setText("/$group")
         inClickManager = false
 
-        //previousPackedPosition =
-        //    ExpandableListView.getPackedPositionForGroup(groupPosition)
+        adapter.selectGroupFromPosition(groupPosition)
 
         return false
     }
 
     private fun afterTextChanged() {
-        val text = patheditor.text
+        patheditor.setBackgroundColor(Color.WHITE)
+
+        val matchResult = adapter.selectFromText(patheditor.text.toString())
+
+        val bg = if (matchResult == MATCH_TYPE.Invalid) {
+            Color.RED
+        } else {
+            Color.WHITE
+        }
+
+        if (matchResult == MATCH_TYPE.Full) {
+            browser.expandGroup(adapter.selectedGroupPosition)
+        }
+        patheditor.setBackgroundColor(bg)
+    }
+}
+
+class ExpandableListAdapter(context: Context): BaseExpandableListAdapter() {
+    private val context = context
+    private var selectedGroup = ""
+    private var selectedChild = ""
+    private var showSelection = true
+    var selectedGroupPosition = -1
+
+    private val pattern = Pattern.compile("/(?<group>[^/]*)(/(?<child>[^/]*))?")
+
+    val LIGHT_BLUE = Color.rgb(100, 200, 255)
+
+    // Data is expected to be constant, this list is used both for generation
+    // of the list view and to search for matches from input
+    private val data = listOf(
+        Pair("light", listOf("pink", "grey")),
+        Pair("medium", listOf("green", "yellow", "red", "blue")),
+        Pair("light", listOf("beige")),
+        Pair("dark", listOf("black", "black", "purple"))
+    )
+
+    fun selectGroupFromPosition(groupPosition: Int) {
+        showSelection = true
+        val (groupName, _) = data[groupPosition]
+        selectedGroup = groupName
+
+        super.notifyDataSetChanged()
+    }
+
+    fun selectChildFromPosition(groupPosition: Int, childPosition: Int) {
+        showSelection = true
+        val (groupName, children) = data[groupPosition]
+        selectedGroup = groupName
+        selectedChild = children[childPosition]
+
+        super.notifyDataSetChanged()
+    }
+
+    fun selectFromText(text: String): MATCH_TYPE {
         val match = pattern.matcher(text)
 
-        var groupIndex = -1
-        var childIndex = -1
-
-        val matchType = if (match.matches()) {
+        val matchResult = if (match.matches()) {
             val group = match.group("group")
             val child = match.group("child")
 
             if (child == null) {
                 // The user only wrote a group name
-                val found = data.find { (groupName, _) -> groupName == group }
-                if (found != null) {
-                    groupIndex = data.indexOf(found)
-                    MATCH_TYPE.Full
-                } else if (data.any { (groupName, _) -> groupName.startsWith(group) }) {
-                    MATCH_TYPE.Partial
-                } else {
-                    MATCH_TYPE.Invalid
+                val foundExact = data.find { (groupName, _) -> groupName == group }
+                val foundPartial = data.any { (groupName, _) -> groupName.startsWith(group) }
+
+                showSelection = true
+                selectedGroupPosition = -1
+                when {
+                    foundExact != null -> {
+                        selectedGroup = group
+                        selectedChild = ""
+                        selectedGroupPosition = data.indexOf(foundExact)
+                        MATCH_TYPE.Full
+                    }
+                    foundPartial -> MATCH_TYPE.Partial
+                    else -> {
+                        showSelection = false
+                        MATCH_TYPE.Invalid
+                    }
                 }
             } else {
                 // The user typed both a group name and a child name
-                var foundExactMatch = false
-                groupLoop@ for (i in 0 until data.size) {
-                    val (groupName, children) = data[i]
-                    if (groupName == group) {
-                        for (j in 0 until children.size) {
-                            if (children[j] == child) {
-                                foundExactMatch = true
-                                groupIndex = i
-                                childIndex = j
-                                break@groupLoop
-                            } else if (children[j].startsWith(child)) {
-                                groupIndex = i
-                                childIndex = j
-                            }
-                        }
-                    }
+                val foundExact = data.find { (groupName, children) ->
+                    groupName == group && children.any { childName -> childName == child }
                 }
 
+                val foundPartial = data.any { (groupName, children) ->
+                    groupName == group && children.any { childName -> childName.startsWith(child) }
+                }
+
+                showSelection = true
+                selectedGroupPosition = -1
                 when {
-                    childIndex == -1 -> MATCH_TYPE.Invalid
-                    foundExactMatch -> MATCH_TYPE.Full
-                    else -> MATCH_TYPE.Partial
+                    foundExact != null -> {
+                        selectedGroup = group
+                        selectedChild = child
+                        selectedGroupPosition = data.indexOf(foundExact)
+                        MATCH_TYPE.Full
+                    }
+                    foundPartial -> MATCH_TYPE.Partial
+                    else -> {
+                        showSelection = false
+                        MATCH_TYPE.Invalid
+                    }
                 }
             }
         } else if (text.isEmpty()) {
             // An empty string counts as a partial match
+            showSelection = true
             MATCH_TYPE.Partial
         } else {
             // The user has typed a string which does not start with a /
+            showSelection = false
             MATCH_TYPE.Invalid
         }
 
-        patheditor.setBackgroundColor(Color.WHITE)
-        when (matchType) {
-            MATCH_TYPE.Full -> {
-                if (childIndex == -1) {
-                    selectGroup(groupIndex)
-                } else {
-                    selectChild(groupIndex, childIndex)
-                }
-            }
-            MATCH_TYPE.Partial -> {
-                val pos = previousPackedPosition
-                if (pos != null) {
-                    val index = browser.getFlatListPosition(pos)
-                    browser.getChildAt(index).setBackgroundColor(LIGHT_BLUE)
-                }
-            }
-            MATCH_TYPE.Invalid -> {
-                patheditor.setBackgroundColor(Color.RED)
-                unselectPrevious()
-            }
-        }
+        super.notifyDataSetChanged()
+
+        return matchResult
     }
 
-    val LIGHT_BLUE = Color.rgb(100, 200, 255)
-
-    private fun selectGroup(groupIndex: Int) {
-        unselectPrevious()
-        if (!browser.isGroupExpanded(groupIndex)) {
-            browser.expandGroup(groupIndex)
-        }
-        val pos = ExpandableListView.getPackedPositionForGroup(groupIndex)
-        val index = browser.getFlatListPosition(pos)
-        previousPackedPosition = pos
-        browser.getChildAt(index).setBackgroundColor(LIGHT_BLUE)
+    override fun isChildSelectable(groupPosition: Int, childPosition: Int): Boolean {
+        return true
     }
 
-    private fun selectChild(groupIndex: Int, childIndex: Int) {
-        unselectPrevious()
-        browser.expandGroup(groupIndex)
-
-        val pos = ExpandableListView.getPackedPositionForChild(groupIndex, childIndex)
-        val index = browser.getFlatListPosition(pos)
-        previousPackedPosition = pos
-        browser.getChildAt(index).setBackgroundColor(LIGHT_BLUE)
+    override fun hasStableIds(): Boolean {
+        return false
     }
 
-    private fun unselectPrevious() {
-        val pos = previousPackedPosition
-        if (pos != null) {
-            val index = browser.getFlatListPosition(pos)
-            browser.getChildAt(index).setBackgroundColor(Color.WHITE)
+    override fun getGroupView(groupPosition: Int, isExpanded: Boolean, convertView: View?, parent: ViewGroup?): View {
+        val view = if (convertView == null) {
+            TextView(context)
+        } else {
+            convertView as TextView
         }
+
+        val (groupName, _) = data[groupPosition]
+        view.text = groupName
+        view.setPadding(100, 0, 0, 0)
+        view.setTextAppearance(context, android.R.style.TextAppearance_Large)
+
+        val bgColor = if (showSelection && selectedGroup == groupName && selectedChild == "") {
+            LIGHT_BLUE
+        } else {
+            Color.TRANSPARENT
+        }
+        view.setBackgroundColor(bgColor)
+
+        return view
+    }
+
+    override fun getChildrenCount(groupPosition: Int): Int {
+        val (_, children) = data[groupPosition]
+        return children.size
+    }
+
+    override fun getChild(groupPosition: Int, childPosition: Int): Any {
+        val (_, children) = data[groupPosition]
+        return children[childPosition]
+    }
+
+    override fun getGroupId(groupPosition: Int): Long {
+        return groupPosition.toLong()
+    }
+
+    override fun getChildView(
+        groupPosition: Int,
+        childPosition: Int,
+        isLastChild: Boolean,
+        convertView: View?,
+        parent: ViewGroup?
+    ): View {
+        val view = if (convertView == null) {
+            TextView(context)
+        } else {
+            convertView as TextView
+        }
+
+        val (groupName, children) = data[groupPosition]
+        view.text = children[childPosition]
+        view.setPadding(150, 0, 0, 0)
+        view.setTextAppearance(context, android.R.style.TextAppearance_Medium)
+
+        val bgColor = if (showSelection && selectedGroup == groupName && selectedChild == children[childPosition]) {
+            LIGHT_BLUE
+        } else {
+            Color.TRANSPARENT
+        }
+        view.setBackgroundColor(bgColor)
+
+        return view
+    }
+
+    override fun getChildId(groupPosition: Int, childPosition: Int): Long {
+        return (groupPosition * data.size + childPosition).toLong()
+    }
+
+    override fun getGroupCount(): Int {
+        return data.size
+    }
+
+    override fun getGroup(groupPosition: Int): Any {
+        return data[groupPosition]
     }
 }

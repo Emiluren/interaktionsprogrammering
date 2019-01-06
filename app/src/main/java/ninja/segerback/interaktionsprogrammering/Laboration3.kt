@@ -8,6 +8,8 @@ import android.widget.LinearLayout
 
 class Laboration3 : Activity() {
 
+    val testData = arrayListOf("Camera", "Laptop")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val combobox = Combobox(this)
