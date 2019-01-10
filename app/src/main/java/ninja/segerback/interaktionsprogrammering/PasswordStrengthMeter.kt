@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.text.Layout
 import android.util.Log
 import android.view.View
 import android.widget.LinearLayout
@@ -42,26 +41,34 @@ abstract class PasswordVisualizer(context: Context): View(context) {
 open class DefaultPasswordVisualizer(context: Context): PasswordVisualizer(context) {
     protected var currentStrength = PasswordStrength.VeryWeak
 
-    protected val redPaint = Paint()
-    protected val orangePaint = Paint()
-    protected val yellowPaint = Paint()
-    protected val lightGreenPaint = Paint()
-    protected val greenPaint = Paint()
+    protected var veryWeakPaint = Paint()
+    protected var weakPaint = Paint()
+    protected var mediocrePaint = Paint()
+    protected var goodPaint = Paint()
+    protected var strongPaint = Paint()
 
     protected var barWidth = 400
     protected var barHeight = 50
 
     init {
-        redPaint.color = Color.RED
-        orangePaint.color = Color.rgb(255, 100, 100)
-        yellowPaint.color = Color.YELLOW
-        lightGreenPaint.color = Color.rgb(200, 255, 200)
-        greenPaint.color = Color.GREEN
+        veryWeakPaint.color = Color.RED
+        weakPaint.color = Color.rgb(255, 100, 100)
+        mediocrePaint.color = Color.YELLOW
+        goodPaint.color = Color.rgb(200, 255, 200)
+        strongPaint.color = Color.GREEN
     }
 
     override fun setStrength(strength: PasswordStrength) {
         currentStrength = strength
         invalidate()
+    }
+
+    fun setColors(veryWeak: Paint, weak: Paint, mediocre: Paint, good: Paint, strong: Paint) {
+        veryWeakPaint = veryWeak
+        weakPaint = weak
+        mediocrePaint = mediocre
+        goodPaint = good
+        strongPaint = strong
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -77,11 +84,11 @@ open class DefaultPasswordVisualizer(context: Context): PasswordVisualizer(conte
         Log.d("oldpass", "test")
 
         when (currentStrength) {
-            PasswordStrength.VeryWeak -> canvas.drawRect(0f, 0f, barWidth.toFloat() / 5, barHeight.toFloat(), redPaint)
-            PasswordStrength.Weak -> canvas.drawRect(0f, 0f, barWidth.toFloat() / 5 * 2, barHeight.toFloat(), orangePaint)
-            PasswordStrength.Mediocre -> canvas.drawRect(0f, 0f, barWidth.toFloat() / 5 * 3, barHeight.toFloat(), yellowPaint)
-            PasswordStrength.Good -> canvas.drawRect(0f, 0f, barWidth.toFloat() / 5 * 4, barHeight.toFloat(), lightGreenPaint)
-            PasswordStrength.Strong -> canvas.drawRect(0f, 0f, barWidth.toFloat(), barHeight.toFloat(), greenPaint)
+            PasswordStrength.VeryWeak -> canvas.drawRect(0f, 0f, barWidth.toFloat() / 5, barHeight.toFloat(), veryWeakPaint)
+            PasswordStrength.Weak -> canvas.drawRect(0f, 0f, barWidth.toFloat() / 5 * 2, barHeight.toFloat(), weakPaint)
+            PasswordStrength.Mediocre -> canvas.drawRect(0f, 0f, barWidth.toFloat() / 5 * 3, barHeight.toFloat(), mediocrePaint)
+            PasswordStrength.Good -> canvas.drawRect(0f, 0f, barWidth.toFloat() / 5 * 4, barHeight.toFloat(), goodPaint)
+            PasswordStrength.Strong -> canvas.drawRect(0f, 0f, barWidth.toFloat(), barHeight.toFloat(), strongPaint)
         }
     }
 }

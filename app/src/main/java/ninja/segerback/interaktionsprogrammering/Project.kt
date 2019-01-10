@@ -10,10 +10,7 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.*
 
 class Project : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,8 +18,8 @@ class Project : FragmentActivity() {
 
         setContentView(R.layout.fragment_pager)
 
-        val stepNames = listOf("Welcome", "Password", "End")
-        val steps = listOf({HelloFragment()}, {PasswordFragment()}, {EndFragment()})
+        val stepNames = listOf("Welcome", "Information", "Password", "End")
+        val steps = listOf({HelloFragment()}, {InformationFragment()}, {PasswordFragment()}, {EndFragment()})
 
         val adapter = StepsAdapter(supportFragmentManager, steps)
         val pager: ViewPager = findViewById(R.id.pager)
@@ -48,8 +45,47 @@ class HelloFragment : Fragment() {
 
         val textView = TextView(context)
         textView.text = "Hello and welcome"
-        textView.textSize = 30.0f
+        textView.textSize = 30f
         frame.addView(textView)
+
+        return v
+    }
+}
+
+class InformationFragment : Fragment() {
+    private fun labeledTextField(label: String, inputType: Int = InputType.TYPE_CLASS_TEXT): TableRow {
+        val row = TableRow(context)
+
+        val labelView = TextView(context)
+        labelView.text = label
+        row.addView(labelView)
+
+        val field = EditText(context)
+        field.inputType = inputType
+        row.addView(field)
+
+        return row
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        val v = inflater.inflate(R.layout.fragment_container, container, false)
+        val frame = v.findViewById<FrameLayout>(R.id.frame)
+
+        val layout = TableLayout(context)
+        layout.addView(labeledTextField("Name"))
+        layout.addView(labeledTextField("Email address", InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS))
+
+        val age = TextView(context)
+        age.text = "Age"
+        val ageSlider = SeekBar(context)
+
+        val ageRow = TableRow(context)
+        ageRow.orientation = LinearLayout.HORIZONTAL
+        ageRow.addView(age)
+        ageRow.addView(ageSlider)
+        layout.addView(ageRow)
+
+        frame.addView(layout)
 
         return v
     }
@@ -107,8 +143,14 @@ class PasswordFragment : Fragment() {
                 }
             })
 
+
+            val label = TextView(context)
+            label.text = "Password"
+            label.textSize = 30f
+
             val passwordPage = LinearLayout(context)
             passwordPage.orientation = LinearLayout.VERTICAL
+            passwordPage.addView(label)
             passwordPage.addView(passwordBox)
             passwordPage.addView(passwordStrengthMeter)
 
